@@ -1,0 +1,5 @@
+user_id,monthly_income,monthly_expenses,total_savings,monthly_emi,emergency_fund,credit_card_due,credit_limit,monthly_debt
+UID1,50000,30000,200000,8000,100000,15000,100000,4000
+UID2,75000,42000,350000,12000,250000,22000,150000,5100
+UID3,40000,28000,100000,5000,60000,8000,50000,3200
+
