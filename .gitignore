@@ -1,0 +1,49 @@
+Last login: Sat Mar 14 19:37:12 on ttys000
+You have new mail.
+pranavgupta@Pranavs-MacBook-Air Devkit % ls -a
+.		.DS_Store	.gitignore	gitcmds.md	README.md
+..		.git		css		react
+pranavgupta@Pranavs-MacBook-Air Devkit % vim .gitignore
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+htmlcov/
+
+# =========================
+
+# Misc
+
+# =========================
+
+*.sqlite3
+*.db
+tmp/
+temp/
+
+# =========================
+
+# OS files
+
+# =========================
+
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+".gitignore" 137L, 1278B                                      137,0-1       Bot
+
