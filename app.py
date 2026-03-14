@@ -1,8 +1,20 @@
-import sys
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
-import matplotlib.pyplot as plt
 
-print("Risk Management Indicator Tool")
+app = FastAPI(title="Risk Management Indicator API")
+
+origins = [
+    "*"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 data = pd.read_csv("1.csv")
 
@@ -17,13 +29,7 @@ def calculate_user_risk(user_id):
     emergency_fund = int(row["emergency_fund"])
     total_savings = int(row["total_savings"])
 
-    print("user_id :", user_id)
-
-    # Expense Ratio
-    print("\nExpense Ratio")
-
     expense_ratio = monthly_expense / monthly_income
-    print("Expense Ratio :", expense_ratio)
 
     if expense_ratio < 0.5:
         expense_risk = "LOW"
@@ -32,13 +38,7 @@ def calculate_user_risk(user_id):
     else:
         expense_risk = "HIGH"
 
-    print("Expense Risk :", expense_risk)
-
-    # DTI
-    print("\nDebt-to-Income Ratio")
-
     dti = (monthly_debt / monthly_income) * 100
-    print("DTI (%):", dti)
 
     if dti <= 36:
         dti_risk = "VERY LOW"
@@ -49,13 +49,7 @@ def calculate_user_risk(user_id):
     else:
         dti_risk = "VERY HIGH"
 
-    print("DTI Risk :", dti_risk)
-
-    # Emergency Fund
-    print("\nEmergency Fund Coverage")
-
     emergency_coverage = emergency_fund / monthly_expense
-    print("Emergency Months :", emergency_coverage)
 
     if emergency_coverage <= 3:
         emergency_risk = "HIGH"
@@ -64,13 +58,7 @@ def calculate_user_risk(user_id):
     else:
         emergency_risk = "LOW"
 
-    print("Emergency Risk :", emergency_risk)
-
-    # Savings
-    print("\nSavings Adequacy")
-
     savings_ratio = total_savings / (12 * monthly_income)
-    print("Savings Ratio :", savings_ratio)
 
     if savings_ratio < 0.25:
         savings_risk = "VERY HIGH"
@@ -83,18 +71,12 @@ def calculate_user_risk(user_id):
     else:
         savings_risk = "VERY LOW"
 
-    print("Savings Risk :", savings_risk)
-
-    # Overall Risk
     overall_risk = (
         expense_ratio * 0.30
         + dti * 0.25
         + emergency_coverage * 0.25
         + savings_ratio * 0.20
     )
-
-    print("\nOverall Portfolio Risk")
-    print("Overall Risk :", overall_risk)
 
     if overall_risk >= 4.0:
         overall_risk_score = "HIGH"
@@ -107,82 +89,61 @@ def calculate_user_risk(user_id):
     else:
         overall_risk_score = "VERY LOW"
 
-    print("Overall Risk to Portfolio :", overall_risk_score)
-    print("------------------------------------------")
-
-    return overall_risk_score
+    return {
+        "user_id": user_id,
+        "expense_ratio": expense_ratio,
+        "expense_risk": expense_risk,
+        "dti": dti,
+        "dti_risk": dti_risk,
+        "emergency_coverage": emergency_coverage,
+        "emergency_risk": emergency_risk,
+        "savings_ratio": savings_ratio,
+        "savings_risk": savings_risk,
+        "overall_risk_value": overall_risk,
+        "overall_risk": overall_risk_score
+    }
 
 
 def analyze_all_users():
 
-    print("You selected ALL USERS mode")
-    print("\nAnalyzing ALL users...\n")
-
     results = []
 
-    count1 = count2 = count3 = count4 = count5 = 0
+    counts = {
+        "HIGH": 0,
+        "MEDIUM-HIGH": 0,
+        "MEDIUM": 0,
+        "LOW": 0,
+        "VERY LOW": 0
+    }
 
     for _, row in data.iterrows():
 
         user = row["user_id"]
 
-        risk = calculate_user_risk(user)
+        risk_data = calculate_user_risk(user)
 
-        if risk == "HIGH":
-            count1 += 1
-        elif risk == "MEDIUM-HIGH":
-            count2 += 1
-        elif risk == "MEDIUM":
-            count3 += 1
-        elif risk == "LOW":
-            count4 += 1
-        else:
-            count5 += 1
+        risk = risk_data["overall_risk"]
 
-        results.append({"UID": user, "Overall Risk": risk})
+        counts[risk] += 1
 
-    print("\nStatistics")
-    print("HIGH RISK :", count1)
-    print("MEDIUM-HIGH RISK :", count2)
-    print("MEDIUM RISK :", count3)
-    print("LOW RISK :", count4)
-    print("VERY LOW RISK :", count5)
+        results.append(risk_data)
 
-    p = [count1, count2, count3, count4, count5]
-    l = ["HIGH", "MEDIUM-HIGH", "MEDIUM", "LOW", "VERY LOW"]
-
-    plt.pie(p, labels=l)
-    plt.show()
-
-    print("\nBatch analysis completed for", len(results), "users")
-
-    choice = input("Do you want to export as CSV? ").strip().upper()
-
-    if choice == "YES":
-        pd.DataFrame(results).to_csv("Report.csv", index=False)
-        print("CSV Successfully Exported")
+    return {
+        "total_users": len(results),
+        "risk_distribution": counts,
+        "users": results
+    }
 
 
 def analyze_single_user(user):
 
-    print("\nYou selected SINGLE USER mode")
-    print("User selected:", user)
+    return calculate_user_risk(user)
 
-    calculate_user_risk(user)
-
-    s = [40, 25, 20, 15]
-    l = ["Analyst", "Consultant", "Manager", "Intern"]
-
-    plt.pie(s, labels=l)
-    plt.show()
+@app.get("/risk/{user_id}")
+def get_user_risk(user_id: str):
+    return analyze_single_user(user_id)
 
 
-# MAIN PROGRAM
-
-user = input("Enter User ID or punch ALL for all users: ").strip().upper()
-
-if user == "ALL":
-    analyze_all_users()
-
-else:
-    analyze_single_user(user)
+@app.get("/risk")
+def get_all_risk():
+    return analyze_all_users()
